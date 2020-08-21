@@ -7,7 +7,6 @@ services:
   - mysql
 before_install:
   - mysql -e 'CREATE DATABASE metalmon_test;'
-  - DATABASE_URL=mysql://root@localhost/metalmon_test > .env
 before_script:
   - cargo install diesel_cli
-  - diesel setup
+  - diesel setup --database-url mysql://root@localhost/metalmon_test
