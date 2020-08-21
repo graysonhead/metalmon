@@ -5,7 +5,7 @@ use diesel::mysql::MysqlConnection;
 use diesel::Connection;
 
 use crypto::scrypt::{scrypt_simple, scrypt_check, ScryptParams};
-use crate::models::{User, NewUser, Project, NewProject};
+use crate::models::{User, NewUser, Project, NewProject, ProjectUser, NewProjectUser};
 
 pub fn hash_password(password: &str) -> String {
     let params = ScryptParams::new(1, 8, 1);
@@ -69,7 +69,6 @@ pub fn list_users(conn: &MysqlConnection) -> Vec<User> {
     use crate::schema::users::dsl::*;
 
     let results = users
-        .limit(5)
         .load::<User>(conn)
         .expect("Error loading users");
 
@@ -86,6 +85,30 @@ pub fn get_user_by_name(conn: &MysqlConnection, target_username: &str) -> User {
     user
 }
 
+pub fn get_project_by_name(conn: &MysqlConnection, target_project: &str) -> Project {
+    use crate::schema::projects::dsl::*;
+
+    let project: Project = projects
+        .filter(name.like(target_project))
+        .first(conn)
+        .unwrap_or_else(|_| panic!("Unable to find project {}", target_project));
+    project
+}
+
+pub fn add_user_to_project(conn: &MysqlConnection, user: User, project: Project) -> ProjectUser {
+    use crate::schema::project_users;
+
+    let new_project_user = NewProjectUser {
+        user_id: user.id,
+        project_id: project.id
+    };
+    diesel::insert_into(project_users::table)
+        .values(&new_project_user)
+        .execute(conn)
+        .expect("Error creating project user role");
+    project_users::table.order(project_users::id.desc()).first(conn).unwrap()
+}
+
 pub fn create_project(conn: &MysqlConnection, project_name: &str) -> Project {
     use crate::schema::projects;
 
@@ -99,6 +122,23 @@ pub fn create_project(conn: &MysqlConnection, project_name: &str) -> Project {
         .expect("Error creating new project");
     projects::table.order(projects::id.desc()).first(conn).unwrap()
 
+}
+
+pub fn delete_project(conn: &MysqlConnection, project_name: &str) -> usize {
+    use crate::schema::projects::dsl::*;
+    let num_deleted = diesel::delete(projects.filter(name.like(project_name)))
+        .execute(conn)
+        .expect("Error deleting project");
+    num_deleted
+}
+
+pub fn get_projects(conn: &MysqlConnection) -> Vec<Project> {
+    use crate::schema::projects::dsl::*;
+
+    let results = projects
+        .load::<Project>(conn)
+        .expect("Error loading projects");
+    results
 }
 
 pub fn establish_connection() -> MysqlConnection {

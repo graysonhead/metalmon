@@ -26,8 +26,19 @@ fn add_project (matches: &ArgMatches) {
     println!("Saved project {}", project.name)
 }
 
-fn delete_project(matches :&ArgMatches) {
+fn list_projects() {
+    let connection = database::establish_connection();
+    let projects = database::get_projects(&connection);
+    for project in projects {
+        println!("{}", project.name);
+    }
+}
 
+fn delete_project(matches :&ArgMatches) {
+    let connection = crate::database::establish_connection();
+    let target_project = matches.value_of("name").unwrap();
+    let num_deleted = database::delete_project(&connection, &target_project);
+    println!("Deleted {} projects", num_deleted);
 }
 
 fn add_user (matches: &ArgMatches) {
@@ -63,6 +74,16 @@ fn delete_user (matches: &ArgMatches) {
     let target_username = matches.value_of("username").unwrap();
     let num_deleted = database::delete_user(&connection, &target_username);
     println!("Deleted {} users", num_deleted);
+}
+
+fn add_user_to_project(matches: &ArgMatches) {
+    let connection = crate::database::establish_connection();
+    let target_username = matches.value_of("username").unwrap();
+    let target_project = matches.value_of("project").unwrap();
+    let user = crate::database::get_user_by_name(&connection, &target_username);
+    let project = crate::database::get_project_by_name(&connection, &target_project);
+    let project_user = crate::database::add_user_to_project(&connection, user, project);
+    println!("Added project user {}", project_user.id);
 }
 
 fn main () {
@@ -163,6 +184,26 @@ fn main () {
             SubCommand::with_name("list_projects")
                 .about("List all projects")
         )
+        .subcommand(
+            SubCommand::with_name("add_user_to_project")
+                .about("Add a user to a project")
+                .arg(
+                    Arg::with_name("username")
+                        .short("u")
+                        .long("username")
+                        .required(true)
+                        .takes_value(true)
+                        .help("User to add to the project")
+                )
+                .arg(
+                    Arg::with_name("project")
+                        .short("p")
+                        .long("project")
+                        .required(true)
+                        .takes_value(true)
+                        .help("Project to add user to")
+                )
+        )
         .get_matches();
 
     
@@ -184,4 +225,14 @@ fn main () {
     if let Some(matches) = matches.subcommand_matches("add_project") {
         add_project(&matches);
     }
+    if let Some(_matches) = matches.subcommand_matches("list_projects") {
+        list_projects();
+    }
+    if let Some(matches) = matches.subcommand_matches("delete_project") {
+        delete_project(&matches);
+    }
+    if let Some(matches) = matches.subcommand_matches("add_user_to_project") {
+        add_user_to_project(&matches);
+    }
+    
 }
