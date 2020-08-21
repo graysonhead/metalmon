@@ -149,5 +149,17 @@ pub fn establish_connection() -> MysqlConnection {
         .expect(&format!("Error connecting to {}", database_url))
 }
 
-
-
+#[cfg(test)]
+mod tests {
+    use super::*;
+    #[test]
+    fn test_hash() {
+        let password = String::from("password");
+        let hash = hash_password(&password);
+        let do_hashes_match = match scrypt_check(&password, &hash) {
+            Ok(bool_result) => bool_result,
+            Err(_e) => false
+        };
+        assert_eq!(do_hashes_match, true);
+    }
+}
