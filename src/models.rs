@@ -2,7 +2,6 @@ use crate::schema::{users, projects, project_users};
 use serde::{Serialize, Deserialize};
 use diesel::mysql::MysqlConnection;
 use crate::database::{get_project_users_by_id};
-
 use crate::api_models::{ApiProject, ApiProjectUser};
 
 #[derive(Identifiable, Queryable, Associations, Serialize, Deserialize)]

@@ -1,11 +1,11 @@
-use metalmon;
+extern crate metalmon;
 
 #[cfg(test)]
 mod integration_tests {
     use super::*;
     #[test]
     fn db_connection_test() {
-        let conn = metalmon::database::establish_connection();
+        let _conn = metalmon::database::establish_connection();
     }
 
     #[test]
@@ -18,6 +18,3 @@ mod integration_tests {
         assert_eq!(num_deleted, 1);
     }
 }
-
-
-
