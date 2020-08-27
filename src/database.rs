@@ -5,7 +5,24 @@ use diesel::mysql::MysqlConnection;
 use diesel::Connection;
 
 use crypto::scrypt::{scrypt_simple, scrypt_check, ScryptParams};
-use crate::models::{User, NewUser, Project, NewProject, ProjectUser, NewProjectUser};
+use crate::models::{
+    User, 
+    NewUser, 
+    Project, 
+    NewProject, 
+    ProjectUser, 
+    NewProjectUser,
+    Projects
+};
+
+pub fn get_project_users_by_id(conn: &MysqlConnection, proj_id: u64) -> Vec<ProjectUser> {
+    use crate::schema::project_users::dsl::*;
+    let results = project_users
+        .filter(project_id.eq(proj_id))
+        .load::<ProjectUser>(conn)
+        .expect("Error loading project_users");
+    results
+}
 
 pub fn hash_password(password: &str) -> String {
     let params = ScryptParams::new(1, 8, 1);
@@ -95,12 +112,21 @@ pub fn get_project_by_name(conn: &MysqlConnection, target_project: &str) -> Proj
     project
 }
 
-pub fn add_user_to_project(conn: &MysqlConnection, user: User, project: Project) -> ProjectUser {
+pub struct ProjectUserPermissions {
+    pub view_role: bool,
+    pub modify_role: bool,
+    pub admin_role: bool
+}
+
+pub fn add_user_to_project(conn: &MysqlConnection, user: User, project: Project, roles: ProjectUserPermissions) -> ProjectUser {
     use crate::schema::project_users;
 
     let new_project_user = NewProjectUser {
         user_id: user.id,
-        project_id: project.id
+        project_id: project.id,
+        view_role: roles.view_role,
+        modify_role: roles.modify_role,
+        admin_role: roles.admin_role
     };
     diesel::insert_into(project_users::table)
         .values(&new_project_user)
@@ -132,13 +158,15 @@ pub fn delete_project(conn: &MysqlConnection, project_name: &str) -> usize {
     num_deleted
 }
 
-pub fn get_projects(conn: &MysqlConnection) -> Vec<Project> {
+pub fn get_projects(conn: &MysqlConnection) -> Projects {
     use crate::schema::projects::dsl::*;
 
     let results = projects
         .load::<Project>(conn)
         .expect("Error loading projects");
-    results
+    Projects {
+        projects: results
+    }
 }
 
 pub fn establish_connection() -> MysqlConnection {

@@ -10,6 +10,9 @@ table! {
         id -> Unsigned<Bigint>,
         user_id -> Unsigned<Bigint>,
         project_id -> Unsigned<Bigint>,
+        view_role -> Bool,
+        modify_role -> Bool,
+        admin_role -> Bool,
     }
 }
 

@@ -3,11 +3,13 @@ extern crate diesel;
 extern crate dotenv;
 
 pub mod models;
+pub mod api_models;
 mod database;
 pub mod schema;
 mod utils;
 
 use crate::utils::get_password_or_prompt;
+
 
 use clap::{App, Arg, SubCommand, ArgMatches};
 
@@ -23,15 +25,21 @@ fn add_project (matches: &ArgMatches) {
     let connection = database::establish_connection();
     let project_name = matches.value_of("name").unwrap();
     let project = database::create_project(&connection, &project_name);
-    println!("Saved project {}", project.name)
+    println!("{}", serde_json::to_string_pretty(&project).unwrap());
 }
 
 fn list_projects() {
     let connection = database::establish_connection();
     let projects = database::get_projects(&connection);
-    for project in projects {
-        println!("{}", project.name);
-    }
+    println!("{}", serde_json::to_string_pretty(&projects).unwrap());
+}
+
+fn show_project(matches: &ArgMatches) {
+    let connection = database::establish_connection();
+    let name = matches.value_of("name").unwrap();
+    let project = database::get_project_by_name(&connection, &name);
+    let api_project = project.get_api_object(&connection);
+    println!("{}", serde_json::to_string_pretty(&api_project).unwrap());
 }
 
 fn delete_project(matches :&ArgMatches) {
@@ -80,9 +88,17 @@ fn add_user_to_project(matches: &ArgMatches) {
     let connection = crate::database::establish_connection();
     let target_username = matches.value_of("username").unwrap();
     let target_project = matches.value_of("project").unwrap();
+    let view_role = matches.is_present("view_role");
+    let modify_role = matches.is_present("modify_role");
+    let admin_role = matches.is_present("admin_role");
+    let permissions = database::ProjectUserPermissions {
+        view_role: view_role,
+        modify_role: modify_role,
+        admin_role: admin_role
+    };
     let user = crate::database::get_user_by_name(&connection, &target_username);
     let project = crate::database::get_project_by_name(&connection, &target_project);
-    let project_user = crate::database::add_user_to_project(&connection, user, project);
+    let project_user = crate::database::add_user_to_project(&connection, user, project, permissions);
     println!("Added project user {}", project_user.id);
 }
 
@@ -203,6 +219,27 @@ fn main () {
                         .takes_value(true)
                         .help("Project to add user to")
                 )
+                .arg(
+                    Arg::with_name("view_role")
+                        .long("view_role")
+                )
+                .arg(
+                    Arg::with_name("modify_role")
+                        .long("modify_role")
+                )
+                .arg(
+                    Arg::with_name("admin_role")
+                        .long("admin_role")
+                )
+        )
+        .subcommand(
+            SubCommand::with_name("get_project")
+                .about("Show project")
+                .arg(
+                    Arg::with_name("name")
+                    .index(1)
+                    .required(true)
+                )
         )
         .get_matches();
 
@@ -233,6 +270,9 @@ fn main () {
     }
     if let Some(matches) = matches.subcommand_matches("add_user_to_project") {
         add_user_to_project(&matches);
+    }
+    if let Some(matches) = matches.subcommand_matches("get_project") {
+        show_project(&matches);
     }
     
 }
