@@ -38,7 +38,7 @@ fn show_project(matches: &ArgMatches) {
     let connection = database::establish_connection();
     let name = matches.value_of("name").unwrap();
     let project = database::get_project_by_name(&connection, &name);
-    let api_project = project.get_api_object(&connection);
+    let api_project = project.get_api_object(Some(&connection));
     println!("{}", serde_json::to_string_pretty(&api_project).unwrap());
 }
 

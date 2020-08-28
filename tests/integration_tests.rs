@@ -1,4 +1,5 @@
 extern crate metalmon;
+use metalmon;
 
 #[cfg(test)]
 mod integration_tests {
@@ -18,3 +19,4 @@ mod integration_tests {
         assert_eq!(num_deleted, 1);
     }
 }
+

@@ -169,6 +169,15 @@ pub fn get_projects(conn: &MysqlConnection) -> Projects {
     }
 }
 
+pub fn get_project_by_id(conn: &MysqlConnection, proj_id: u64) -> Project {
+    use crate::schema::projects::dsl::*;
+    let result = projects
+        .filter(id.eq(proj_id))
+        .first(conn)
+        .expect("Error loading project");
+    result
+}
+
 pub fn establish_connection() -> MysqlConnection {
     dotenv().ok();
     let database_url = env::var("DATABASE_URL")
