@@ -1,4 +1,3 @@
-extern crate metalmon;
 use metalmon;
 
 #[cfg(test)]

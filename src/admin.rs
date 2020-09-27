@@ -3,7 +3,6 @@ extern crate diesel;
 extern crate dotenv;
 
 pub mod models;
-pub mod api_models;
 mod database;
 pub mod schema;
 mod utils;

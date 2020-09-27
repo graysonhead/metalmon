@@ -1,3 +1,4 @@
+// use crate::api_models::{ApiProject, ApiProjectUser};
 use crate::schema::{users, projects, project_users};
 use serde::{Serialize, Deserialize};
 use diesel::mysql::MysqlConnection;
@@ -5,7 +6,13 @@ use crate::database::{
     get_project_users_by_id,
     get_project_by_id,
 };
-use crate::api_models::{ApiProject, ApiProjectUser};
+
+// Imports for API models
+use jsonapi::api::*;
+use jsonapi::model::*;
+use jsonapi::array::JsonApiArray;
+use jsonapi::jsonapi_model;
+
 
 #[derive(Identifiable, Queryable, Associations, Serialize, Deserialize)]
 pub struct Project {
@@ -105,3 +112,23 @@ pub struct NewUser<'a> {
     pub username: &'a str,
     pub pw_hash: &'a str,
 }
+
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ApiProject {
+    pub id: u64,
+    pub name: String,
+    pub project_users: Option<Vec<ApiProjectUser>>
+}
+jsonapi_model!(ApiProject; "project"; has many project_users);
+
+#[derive(Debug, PartialEq, Serialize, Deserialize)]
+pub struct ApiProjectUser {
+    pub id: u64,
+    pub project_id: u64,
+    pub user_id: u64,
+    pub view_role: bool,
+    pub modify_role: bool,
+    pub admin_role: bool,
+}
+jsonapi_model!(ApiProjectUser; "project_user");
